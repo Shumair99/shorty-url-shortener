@@ -1,0 +1,25 @@
+# 1. Name (shows up in GitHub Actions tab)
+name: CI
+
+# 2. Trigger (when should it run?)
+on: 
+  push:           # whenever you push
+    branches: [ main ]
+  pull_request:   # and also on PRs to main
+
+# 3. Jobs (a workflow can have 1 or many jobs)
+jobs:
+  build:
+    runs-on: ubuntu-latest   # which VM to use
+    steps:                   # what to do, step by step
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Run tests
+        run: mvn test
