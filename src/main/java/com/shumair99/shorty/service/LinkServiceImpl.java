@@ -94,9 +94,9 @@ public class LinkServiceImpl implements LinkService {
         Link link = new Link(slug, targetURL, Instant.now(), expirationDate);
         repo.save(link);
 
-        String shortURL = baseUrl + "/r/" + slug;
+        String customURL = baseUrl + "/r/" + slug;
 
-        return new CreateLinkResponse(slug, shortURL, targetURL, expirationDate != null ? expirationDate.toString() : null);
+        return new CreateLinkResponse(slug, customURL, targetURL, expirationDate != null ? expirationDate.toString() : null);
     }
 
     @Override

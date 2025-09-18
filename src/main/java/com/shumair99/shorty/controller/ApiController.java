@@ -5,7 +5,6 @@ import com.shumair99.shorty.dto.CreateLinkResponse;
 
 import java.net.URI;
 
-//import com.shumair99.shorty.service.LinkService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

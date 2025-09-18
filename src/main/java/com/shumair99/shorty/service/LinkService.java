@@ -7,4 +7,5 @@ import com.shumair99.shorty.dto.ResolvedLink;
 public interface LinkService {
     CreateLinkResponse create(CreateLinkRequest req);
     ResolvedLink resolve(String slug);
+    
 }
