@@ -1,4 +1,4 @@
-package com.shumair99.shorty.repo;
+/**package com.shumair99.shorty.repo;
 
 import com.shumair99.shorty.domain.Link;
 import org.springframework.stereotype.Repository;
@@ -28,4 +28,4 @@ public class InMemoryLinkRepository implements LinkRepository {
     public Optional<Link> findBySlug(String slug) {
         return Optional.ofNullable(store.get(slug));
     }
-}
+}*/

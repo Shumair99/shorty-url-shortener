@@ -26,8 +26,20 @@ form.addEventListener('submit', async (e) => {
   const customSlug = slugInput.value.trim();
   if (customSlug) payload.customSlug = customSlug;
 
-  const expirationDate = expInput.value.trim();
-  if (expirationDate) payload.expirationDate = expirationDate;
+  function toIsoOrNull(val) {
+    if (!val) return null;
+  
+    const dt = new Date(val);
+    
+    const iso = new Date(dt.getTime() - dt.getTimezoneOffset()*60000)
+                  .toISOString().replace('.000Z','Z');
+    return iso;
+  }
+
+  const raw = expInput.value.trim();
+  const iso = toIsoOrNull(raw);
+  if (iso) payload.expirationDate = iso;
+
 
   try {
     const res = await fetch('/api/links', {

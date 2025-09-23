@@ -90,11 +90,32 @@ public class LinkServiceImpl implements LinkService {
             slug = generateUniqueSlug();
         }
 
+        String expirationStr = trimToNull(req.getExpirationDate());
+
         Instant expirationDate = null;
-        Link link = new Link(slug, targetURL, Instant.now(), expirationDate);
+        if (expirationStr != null) {
+            try {
+                expirationDate = java.time.Instant.parse(expirationStr);
+            } catch (java.time.format.DateTimeParseException e) {
+                try {
+                    java.time.LocalDate d = java.time.LocalDate.parse(expirationStr);
+                    expirationDate = d.atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+                } catch (java.time.format.DateTimeParseException e2) {
+                    throw new com.shumair99.shorty.core.BadRequestException(
+                        "expirationDate must be in the format 2026-01-01 00:00:00 or YYYY-MM-DD"
+                    );
+                }
+            }
+
+            if (!expirationDate.isAfter(java.time.Instant.now())) {
+                throw new com.shumair99.shorty.core.BadRequestException("expirationDate must be in the future");
+            }
+        }
+
+        Link link = new Link(slug, targetURL, java.time.Instant.now(), expirationDate);
         repo.save(link);
 
-        String customURL = baseUrl + "/r/" + slug;
+                String customURL = baseUrl + "/r/" + slug;
 
         return new CreateLinkResponse(slug, customURL, targetURL, expirationDate != null ? expirationDate.toString() : null);
     }
@@ -122,7 +143,7 @@ public class LinkServiceImpl implements LinkService {
     }
     
     private String generateUniqueSlug() {
-        //try a few times in case of collision (rare).
+        //try a few times in case of rare collisions (not likely to happen)
             for (int i = 0; i < 5; i++) {
                 String candidate = slugGenerator.generate(slugLength);
                     if (!repo.existsBySlug(candidate) && !reserved.contains(candidate.toLowerCase(Locale.ROOT))) {

@@ -5,7 +5,8 @@ name: CI
 on: 
   push:           # whenever you push
     branches: [ main ]
-  pull_request:   # and also on PRs to main
+  pull_request: 
+    branches: [ main ]  # and also on PRs to main
 
 # 3. Jobs (a workflow can have 1 or many jobs)
 jobs:
@@ -15,11 +16,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
+          cache: maven
 
-      - name: Run tests
-        run: mvn test
+      - name: Show tool versions
+        run: |
+          java -version
+          ./mvnw -v
+
+      - name: Build & test (H2)
+        run: ./mvnw -B -ntp clean verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/*
+          if-no-files-found: ignore
+
+      - name: Upload jar
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+          if-no-files-found: error
