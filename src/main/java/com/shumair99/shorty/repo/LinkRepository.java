@@ -1,15 +1,14 @@
 package com.shumair99.shorty.repo;
 
-import com.shumair99.shorty.domain.Link;
-
 import java.util.Optional;
 
-public interface LinkRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
 
-    void save(Link link);
+import com.shumair99.shorty.jpa.LinkEntity;
 
+public interface LinkRepository extends JpaRepository<LinkEntity, String> {
+    Optional<LinkEntity> findBySlug(String slug);
     boolean existsBySlug(String slug);
-
-    Optional<Link> findBySlug(String slug);
 }
+
 

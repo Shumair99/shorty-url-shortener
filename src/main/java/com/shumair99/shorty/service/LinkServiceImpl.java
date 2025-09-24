@@ -9,7 +9,7 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 import com.shumair99.shorty.dto.CreateLinkRequest;
 import com.shumair99.shorty.dto.CreateLinkResponse;
 import com.shumair99.shorty.dto.ResolvedLink;
-import com.shumair99.shorty.domain.Link;
+import com.shumair99.shorty.jpa.LinkEntity;
 import com.shumair99.shorty.repo.LinkRepository;
 import com.shumair99.shorty.core.BadRequestException;
 import com.shumair99.shorty.core.ConflictException;
@@ -112,7 +112,7 @@ public class LinkServiceImpl implements LinkService {
             }
         }
 
-        Link link = new Link(slug, targetURL, java.time.Instant.now(), expirationDate);
+        LinkEntity link = new LinkEntity(slug, targetURL, java.time.Instant.now(), expirationDate);
         repo.save(link);
 
                 String customURL = baseUrl + "/r/" + slug;
