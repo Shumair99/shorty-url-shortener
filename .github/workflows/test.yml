@@ -29,6 +29,9 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Make Maven Wrapper executable
+        run: chmod +x ./mvnw
+
       - name: Show tool versions
         run: |
           java -version
