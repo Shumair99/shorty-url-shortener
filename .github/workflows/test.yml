@@ -1,19 +1,25 @@
-# 1. Name (shows up in GitHub Actions tab)
 name: CI
 
-# 2. Trigger (when should it run?)
-on: 
-  push:           # whenever you push
+on:
+  push:
     branches: [ main ]
-  pull_request: 
-    branches: [ main ]  # and also on PRs to main
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
 
-# 3. Jobs (a workflow can have 1 or many jobs)
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-    runs-on: ubuntu-latest   # which VM to use
-    steps:                   # what to do, step by step
-      - name: Checkout code
+  test-h2:
+    name: Build and test (H2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -28,14 +34,14 @@ jobs:
           java -version
           ./mvnw -v
 
-      - name: Build & test (H2)
+      - name: Maven clean verify
         run: ./mvnw -B -ntp clean verify
 
-      - name: Upload test reports
+      - name: Upload unit test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
+          name: surefire-reports-h2
           path: target/surefire-reports/*
           if-no-files-found: ignore
 
@@ -46,3 +52,100 @@ jobs:
           name: app-jar
           path: target/*.jar
           if-no-files-found: error
+
+  test-postgres:
+    name: Integration tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: umair
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: shorty
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U umair -d shorty"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: shorty
+      DB_USER: umair
+      DB_PASSWORD: password
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run tests with spring profile 'postgres'
+        run: ./mvnw -B -ntp -Dspring.profiles.active=postgres test
+
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-postgres
+          path: target/surefire-reports/*
+          if-no-files-found: ignore
+
+  docker-image:
+    name: Build and publish Docker image
+    needs: [ test-h2, test-postgres ]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Package application jar (skip tests)
+        run: ./mvnw -B -ntp -DskipTests package
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/shorty
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
