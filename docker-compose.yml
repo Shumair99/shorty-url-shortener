@@ -1,15 +1,23 @@
 services:
   db:
-    image: postgres:16.4
-    container_name: shorty-db
+    image: postgres:16
     environment:
-      POSTGRES_USER: umair
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: shorty
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-
+  app:
+    build: .
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_BASE_URL: ${APP_BASE_URL}
+    depends_on:
+      - db
 volumes:
   pgdata:
