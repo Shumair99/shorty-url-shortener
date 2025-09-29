@@ -19,10 +19,9 @@ public class RedirectController {
         this.linkService = linkService;
     }
 
-    @GetMapping("/r/{slug:[A-Za-z0-9_-]{3,64}}")
+    @GetMapping("/{slug:^(?!api$)(?!r$)(?!error$)(?!assets$)(?!index\\.html$)(?!styles\\.css$)(?!script\\.js$)[A-Za-z0-9_-]{3,64}$}") //exceptions for reserved paths and static files
     public ResponseEntity<Void> redirect(@PathVariable String slug) {
-        // Here you would typically look up the slug in your database to find the corresponding target URL.
-        // For demonstration purposes, we'll just redirect to a fixed URL.
+
         ResolvedLink resolvedLink = linkService.resolve(slug);
         if (resolvedLink == null) {
             return ResponseEntity.notFound().build();

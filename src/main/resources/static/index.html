@@ -2,37 +2,90 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Shorty</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
-    form { display: flex; gap: .5rem; }
-    input[type="url"] { flex: 1; padding: .5rem; }
-    button { padding: .5rem .75rem; cursor: pointer; }
-    .msg { margin-top: 1rem; }
-    .error { color: #b00020; }
-    .success { color: #0a7c0a; }
-    .result { margin-top: .5rem; padding: .75rem; border: 1px solid #ddd; border-radius: 8px; }
-    code { background: #f6f6f6; padding: .15rem .3rem; border-radius: 4px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Shorty · URL Shortener</title>
+  <meta name="color-scheme" content="light dark" />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <h1>Shorty – URL Shortener</h1>
 
-  <form id="url-form">
-    <input type="url" id="url-input" placeholder="Enter URL to shorten (https://…)" required />
-    <input type="text" id="slug-input" placeholder="Custom slug (optional)" />
-    <input type="datetime-local" id="exp-input" placeholder="Expiration (optional)" />
-    <button type="submit">Shorten</button>
-  </form>
+  <div class="stack">
+    <header class="page-header">
+      <h1 class="app-title">Shorty</h1>
+      <p class="app-subtitle">Sleek, simple URL shortening</p>
+    </header>
 
-  <div id="message" class="msg"></div>
-  <div id="result" class="result" style="display:none;">
-    <div>Short URL: <a id="short-link" href="#" target="_blank" rel="noopener"></a></div>
-    <div>Target: <code id="target-url"></code></div>
-    <div>Expires: <code id="exp-date"></code></div>
+  <div class="shell" role="application" aria-label="Shorty URL Shortener">
+
+
+    <main>
+      <form id="url-form" novalidate>
+        <div class="field">
+          <label for="url-input">Destination URL</label>
+          <div class="input">
+            <input type="url" id="url-input" placeholder="https://example.com/some/very/long/path" required />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="slug-input">Custom slug <span class="hint">(optional)</span></label>
+            <div class="input">
+              <input type="text" id="slug-input" placeholder="e.g. hello-world" inputmode="latin" spellcheck="false" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="exp-input">Expiration <span class="hint">(optional)</span></label>
+            <div class="input">
+              <input type="datetime-local" id="exp-input" />
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="submit-btn" type="submit" aria-live="polite">
+            <span class="btn-text">Create short link</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+          <button class="ghost" type="reset" id="reset-btn">Reset</button>
+        </div>
+
+        <div id="message" class="msg" role="status" aria-live="polite"></div>
+      </form>
+
+      <section id="result" class="result" aria-live="polite">
+        <div class="kv">
+          <div class="k">Short URL</div>
+          <div class="copy-wrap">
+            <a id="short-link" href="#" target="_blank" rel="noopener noreferrer">—</a>
+          </div>
+          <div>
+            <button class="copy-btn" id="copy-btn" type="button" title="Copy to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V7Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M7 9H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6" stroke="currentColor" stroke-width="1.6"/>
+              </svg>
+              Copy
+            </button>
+          </div>
+
+          <div class="k">Target</div>
+          <code id="target-url">—</code>
+          <div></div>
+
+          <div class="k">Expires</div>
+          <code id="exp-date">none</code>
+          <div></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span class="hint">Paste a URL, optionally add a slug/expiration, then hit “Create short link”.</span>
+    </footer>
   </div>
-
-  <script src="/script.js"></script>
+  </div>
+  <script src="/script.js" defer></script>
 </body>
 </html>

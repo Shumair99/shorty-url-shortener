@@ -9,69 +9,124 @@ const shortLink = document.getElementById('short-link');
 const targetURL = document.getElementById('target-url');
 const expDate = document.getElementById('exp-date');
 
-function showMessage(text, isError = false) {
+const submitBtn = document.getElementById('submit-btn');
+const resetBtn = document.getElementById('reset-btn');
+const copyBtn = document.getElementById('copy-btn');
+
+function setLoading(isLoading){
+  submitBtn.classList.toggle('loading', isLoading);
+  submitBtn.disabled = isLoading;
+}
+
+function showMessage(text, type = 'success') {
   message.textContent = text;
-  message.className = 'msg ' + (isError ? 'error' : 'success');
+  message.className = 'msg ' + (type === 'error' ? 'error' : 'success');
+}
+
+function clearMessage(){
+  message.textContent = '';
+  message.className = 'msg';
+}
+
+function isValidURL(val) {
+  try { 
+    const u = new URL(val);
+    return !!u.protocol && !!u.host;
+  } catch { return false; }
+}
+
+function toIsoOrNull(val) {
+  if (!val) return null;
+  const dt = new Date(val);
+  // Convert local datetime-local to UTC ISO without milliseconds for backend consistency
+  const iso = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+                .toISOString().replace('.000Z', 'Z');
+  return iso;
+}
+
+function revealResult(data){
+  shortLink.href = data.customURL;
+  shortLink.textContent = data.customURL;
+  targetURL.textContent = data.targetURL;
+  expDate.textContent = data.expirationDate || 'none';
+  result.style.display = 'block';
 }
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  message.textContent = '';
+  clearMessage();
   result.style.display = 'none';
 
-  const payload = {
-    targetURL: urlInput.value.trim(),
-  };
+  const target = urlInput.value.trim();
+  if (!isValidURL(target)) {
+    showMessage('Please enter a valid URL (include https://).', 'error');
+    urlInput.focus();
+    return;
+  }
 
+  const payload = { targetURL: target };
   const customSlug = slugInput.value.trim();
   if (customSlug) payload.customSlug = customSlug;
 
-  function toIsoOrNull(val) {
-    if (!val) return null;
-  
-    const dt = new Date(val);
-    
-    const iso = new Date(dt.getTime() - dt.getTimezoneOffset()*60000)
-                  .toISOString().replace('.000Z','Z');
-    return iso;
-  }
-
-  const raw = expInput.value.trim();
-  const iso = toIsoOrNull(raw);
+  const iso = toIsoOrNull(expInput.value.trim());
   if (iso) payload.expirationDate = iso;
 
-
   try {
+    setLoading(true);
+
     const res = await fetch('/api/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
+    const contentType = res.headers.get('content-type') || '';
+    const parseJSON = contentType.includes('application/json');
+
     if (res.status === 201) {
-      const data = await res.json();
-      showMessage('Short URL created!', false);
-      shortLink.href = data.customURL;
-      shortLink.textContent = data.customURL;
-      targetURL.textContent = data.targetURL;
-      expDate.textContent = data.expirationDate || 'none';
-      result.style.display = 'block';
+      const data = parseJSON ? await res.json() : {};
+      showMessage('Short URL created!');
+      revealResult(data);
       return;
     }
 
-    // Non-201: show error content if available
-    let errorText = 'Something went wrong.';
+    //status != 201 - show error
+    let errorText = `Something went wrong (HTTP ${res.status}).`;
     try {
-      const err = await res.json();
-      if (err && (err.message || err.error)) {
-        errorText = err.message || err.error;
+      if (parseJSON) {
+        const err = await res.json();
+        if (err && (err.message || err.error)) errorText = err.message || err.error;
+      } else {
+        const raw = await res.text();
+        if (raw) errorText = raw;
       }
-    } catch (_) {
-      errorText = await res.text();
-    }
-    showMessage(errorText || `HTTP ${res.status}`, true);
+    } catch(_) {}
+
+    showMessage(errorText, 'error');
 
   } catch (err) {
-    showMessage('Network error: ' + err.message, true);
+    showMessage('Network error: ' + err.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  clearMessage();
+  result.style.display = 'none';
+});
+
+copyBtn.addEventListener('click', async () => {
+  const val = shortLink.textContent?.trim();
+  if (!val) return;
+
+  try{
+    await navigator.clipboard.writeText(val);
+    const original = copyBtn.textContent;
+    copyBtn.textContent = 'Copied!';
+    setTimeout(() => (copyBtn.textContent = original), 1200);
+  }catch{
+    // Fallback: select text via prompt
+    window.prompt('Copy to clipboard:', val);
   }
 });

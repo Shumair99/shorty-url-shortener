@@ -115,7 +115,7 @@ public class LinkServiceImpl implements LinkService {
         LinkEntity link = new LinkEntity(slug, targetURL, java.time.Instant.now(), expirationDate);
         repo.save(link);
 
-                String customURL = baseUrl + "/r/" + slug;
+                String customURL = baseUrl + "/" + slug;
 
         return new CreateLinkResponse(slug, customURL, targetURL, expirationDate != null ? expirationDate.toString() : null);
     }
